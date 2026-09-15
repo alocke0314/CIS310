@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawPrint DB Lab — CIS 310 SQL Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ECE7DA;
+    --paper-alt:#E2DCC9;
+    --ink:#23241D;
+    --ink-soft:#54544A;
+    --panel-dark:#1E2A28;
+    --mint:#9FE6B3;
+    --mint-dim:#6FA582;
+    --gold:#B8863B;
+    --gold-dim:#8f6a2c;
+    --rust:#9B3F2C;
+    --leaf:#4C6B44;
+    --rule:#c9c1ab;
+    --white:#FBF9F3;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px;
+    line-height:1.55;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', serif;}
+  code, .mono, textarea, .sql-block, pre{font-family:'IBM Plex Mono', monospace;}
+  a{color:var(--leaf);}
+
+  #app{display:flex; min-height:100vh;}
+
+  .sidebar{
+    width:252px; flex:0 0 252px;
+    background:var(--panel-dark);
+    color:var(--white);
+    padding:26px 20px 20px;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  .brand{margin-bottom:22px;}
+  .brand .kicker{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.04em; color:var(--mint-dim);}
+  .brand h1{font-size:22px; margin:4px 0 2px; color:var(--white); line-height:1.15;}
+  .brand .sub{font-size:12.5px; color:#B7C4BF;}
+
+  .engine-badge{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--mint); border:1px solid #34423F; border-radius:3px; padding:5px 8px; margin-bottom:16px; display:flex; align-items:center; gap:6px;}
+  .engine-dot{width:7px; height:7px; border-radius:50%; background:var(--mint); display:inline-block;}
+  .engine-dot.loading{background:var(--gold); animation:pulse 1.1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .progress-wrap{margin:18px 0 22px; padding:12px 12px; border:1px solid #34423F; border-radius:3px;}
+  .progress-label{display:flex; justify-content:space-between; font-size:11.5px; color:#B7C4BF; margin-bottom:6px; font-family:'IBM Plex Mono',monospace;}
+  .progress-bar{height:6px; background:#152220; border-radius:3px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--mint); transition:width .3s ease;}
+
+  .nav-mod{
+    display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer;
+    color:#D8DED9; padding:10px 8px; margin-bottom:2px; border-left:3px solid transparent;
+    font-family:'Space Grotesk',sans-serif; font-size:13.5px;
+  }
+  .nav-mod:hover{background:#26332F;}
+  .nav-mod.active{border-left-color:var(--gold); background:#26332F; color:var(--white); font-weight:500;}
+  .nav-mod .num{font-family:'IBM Plex Mono',monospace; color:var(--mint-dim); margin-right:6px;}
+  .nav-mod .count{display:block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#8FA39B; margin-top:2px; margin-left:20px;}
+
+  .reset-btn{
+    margin-top:16px; width:100%; background:none; border:1px solid #3C4B47; color:#93A69F;
+    padding:8px; font-size:11.5px; font-family:'IBM Plex Mono',monospace; cursor:pointer; border-radius:3px;
+  }
+  .reset-btn:hover{border-color:var(--rust); color:#E0A99B;}
+
+  main{flex:1; padding:34px 44px 80px; max-width:900px;}
+
+  .hero{margin-bottom:34px;}
+  .hero .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gold-dim); margin-bottom:6px;}
+  .hero h1{font-size:38px; margin:0 0 10px; max-width:640px;}
+  .hero p{max-width:560px; color:var(--ink-soft); font-size:15px;}
+
+  .module-header{border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:22px;}
+  .module-header .tag{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gold-dim); background:#DCD3B8; display:inline-block; padding:3px 8px; border-radius:2px; margin-bottom:8px;}
+  .module-header h2{font-size:27px; margin:0 0 6px;}
+  .module-header p{color:var(--ink-soft); margin:0; max-width:620px; font-size:14px;}
+
+  .schema-ref{margin-bottom:26px; border:1px solid var(--rule); border-radius:2px; background:var(--white);}
+  .schema-ref summary{cursor:pointer; padding:12px 16px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft); list-style:none; display:flex; align-items:center; gap:8px;}
+  .schema-ref summary::-webkit-details-marker{display:none;}
+  .schema-ref summary::before{content:"▸"; color:var(--gold-dim); font-size:11px;}
+  .schema-ref[open] summary::before{content:"▾";}
+  .schema-ref summary .schema-ref-label{color:var(--ink); font-weight:600; font-family:'Space Grotesk',sans-serif; font-size:13.5px;}
+  .schema-ref-body{padding:4px 16px 16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px;}
+  .schema-ref-table{border:1px solid var(--rule); border-radius:2px; overflow:hidden;}
+  .schema-ref-table h4{margin:0; padding:7px 10px; background:var(--paper-alt); font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600;}
+  .schema-ref-table table{width:100%; border-collapse:collapse; font-size:11.5px; font-family:'IBM Plex Mono',monospace;}
+  .schema-ref-table td{padding:4px 10px; border-top:1px solid #ece7db; vertical-align:top;}
+  .schema-ref-table td:first-child{color:var(--ink); white-space:nowrap;}
+  .schema-ref-table td:last-child{color:var(--ink-soft);}
+
+  .exercise{
+    background:var(--white);
+    border:1px solid var(--rule);
+    border-top:3px solid var(--ink);
+    border-radius:2px;
+    padding:20px 22px 22px;
+    margin-bottom:22px;
+  }
+  .exercise.done{border-top-color:var(--leaf);}
+  .ex-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px;}
+  .ex-id{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft);}
+  .ex-status{font-family:'IBM Plex Mono',monospace; font-size:11px; padding:2px 8px; border-radius:10px; border:1px solid var(--rule); color:var(--ink-soft);}
+  .ex-status.done{background:#E5EEE2; border-color:var(--leaf); color:var(--leaf);}
+  .ex-prompt{font-size:15.5px; margin:0 0 14px; line-height:1.5;}
+  .ex-prompt b{font-weight:600;}
+
+  textarea.sql-input{
+    width:100%; min-height:96px; background:var(--panel-dark); color:var(--mint);
+    border:1px solid #34423F; border-radius:3px; padding:12px 14px; font-size:13.5px;
+    resize:vertical; line-height:1.5;
+  }
+  textarea.sql-input:focus{outline:2px solid var(--gold); outline-offset:1px;}
+
+  .btn-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .btn{
+    font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:500;
+    padding:8px 14px; border-radius:3px; cursor:pointer; border:1px solid var(--ink);
+    background:var(--ink); color:var(--white);
+  }
+  .btn:hover{background:#3a3c30;}
+  .btn.secondary{background:none; color:var(--ink); border-color:var(--rule);}
+  .btn.secondary:hover{border-color:var(--ink);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .feedback{margin-top:14px; padding:10px 12px; border-radius:3px; font-size:13.5px;}
+  .feedback.correct{background:#E5EEE2; color:var(--leaf); border:1px solid #B9CFAF;}
+  .feedback.incorrect{background:#F3E4DE; color:var(--rust); border:1px solid #E0BBAA;}
+  .feedback.error{background:#F3E4DE; color:var(--rust); border:1px solid #E0BBAA; font-family:'IBM Plex Mono',monospace; font-size:12.5px;}
+
+  .result-table-wrap{margin-top:12px; overflow-x:auto; max-height:260px; overflow-y:auto; border:1px solid var(--rule); border-radius:3px;}
+  table.result-table{border-collapse:collapse; width:100%; font-size:12.5px; font-family:'IBM Plex Mono',monospace;}
+  table.result-table th{background:var(--paper-alt); text-align:left; padding:6px 10px; position:sticky; top:0; border-bottom:1px solid var(--rule);}
+  table.result-table td{padding:5px 10px; border-bottom:1px solid #ece7db;}
+  table.result-table tr:nth-child(even) td{background:#F7F4EC;}
+
+  .assert-list{margin-top:12px; font-size:13px;}
+  .assert-list li{list-style:none; padding:4px 0 4px 22px; position:relative;}
+  .assert-list li.pass::before{content:"✓"; position:absolute; left:0; color:var(--leaf); font-weight:700;}
+  .assert-list li.fail::before{content:"✕"; position:absolute; left:0; color:var(--rust); font-weight:700;}
+
+  .hint-box, .solution-box{margin-top:12px; padding:10px 12px; background:var(--paper-alt); border-left:3px solid var(--gold); border-radius:2px; font-size:13.5px;}
+  .solution-box pre{white-space:pre-wrap; margin:6px 0 0; font-size:12.5px; background:var(--panel-dark); color:var(--mint); padding:10px 12px; border-radius:3px;}
+
+  .quiz-options{margin-top:4px;}
+  .quiz-option{display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--rule); border-radius:3px; margin-bottom:7px; cursor:pointer; font-size:14px;}
+  .quiz-option:hover{border-color:var(--ink);}
+  .quiz-option input{accent-color:var(--ink);}
+  .quiz-option.selected{border-color:var(--ink); background:var(--paper-alt);}
+
+  textarea.reflect-input{width:100%; min-height:70px; padding:10px 12px; border:1px solid var(--rule); border-radius:3px; font-family:'Space Grotesk',sans-serif; font-size:13.5px;}
+
+  footer.site-footer{max-width:900px; margin:0 auto; padding:0 44px 60px; color:var(--ink-soft); font-size:12.5px;}
+
+  @media (max-width: 820px){
+    #app{flex-direction:column;}
+    .sidebar{position:relative; width:100%; height:auto; flex:none;}
+    main{padding:24px 18px 60px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main id="main"></main>
+</div>
+<footer class="site-footer" id="footer"></footer>
+
+<script type="module">
+import { PGlite } from "https://cdn.jsdelivr.net/npm/@electric-sql/pglite/dist/index.js";
+
+/* =========================================================================
+   PAWPRINT DB LAB
+   PostgreSQL practice for CIS 310, aligned to the course modules and
+   Practical SQL (2nd ed.) chapters. Runs on a real WASM build of Postgres
+   (PGlite) entirely client-side — nothing is sent to any server.
+   ========================================================================= */
+
+const SCHEMA_SQL = `
+CREATE TABLE shelters (
+  shelter_id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  capacity INTEGER NOT NULL
+);
+CREATE TABLE staff (
+  staff_id INTEGER PRIMARY KEY,
+  shelter_id INTEGER NOT NULL REFERENCES shelters(shelter_id),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  hire_date DATE NOT NULL,
+  salary NUMERIC NOT NULL
+);
+CREATE TABLE animals (
+  animal_id INTEGER PRIMARY KEY,
+  shelter_id INTEGER NOT NULL REFERENCES shelters(shelter_id),
+  name TEXT NOT NULL,
+  species TEXT NOT NULL,
+  breed TEXT,
+  birth_date DATE,
+  intake_date DATE NOT NULL,
+  status TEXT NOT NULL
+);
+CREATE TABLE adopters (
+  adopter_id INTEGER PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  signup_date DATE NOT NULL
+);
+CREATE TABLE adoptions (
+  adoption_id INTEGER PRIMARY KEY,
+  animal_id INTEGER NOT NULL REFERENCES animals(animal_id),
+  adopter_id INTEGER NOT NULL REFERENCES adopters(adopter_id),
+  staff_id INTEGER NOT NULL REFERENCES staff(staff_id),
+  adoption_date DATE NOT NULL,
+  fee NUMERIC NOT NULL
+);
+CREATE TABLE medical_records (
+  record_id INTEGER PRIMARY KEY,
+  animal_id INTEGER NOT NULL REFERENCES animals(animal_id),
+  visit_date DATE NOT NULL,
+  description TEXT NOT NULL,
+  cost NUMERIC NOT NULL,
+  vet_name TEXT NOT NULL
+);
+`;
+
+function insertRows(table, cols, rows){
+  return rows.map(r => `INSERT INTO ${table} (${cols}) VALUES (${r.map(v =>
+    typeof v === 'string' ? `'${v.replace(/'/g,"''")}'` : v).join(',')});`).join('\n');
+}
+
+const shelters=[[1,'Riverside Shelter','Columbus','OH',80],[2,'Lakeside Haven','Cleveland','OH',60],[3,'Hillcrest Rescue','Cincinnati','OH',45],[4,'Northgate Adoption Center','Dayton','OH',50],[5,'Eastside Rescue Center','Toledo','OH',40],[6,'Southfield Animal Shelter','Akron','OH',35]];
+const staff=[[1,1,'Maria','Gomez','Shelter Manager','2019-03-01',52000],[2,1,'James','Ortiz','Adoption Counselor','2021-06-15',38000],[3,1,'Wei','Zhang','Vet Tech','2020-01-10',41000],[4,2,'Alicia','Brown','Shelter Manager','2018-09-20',53500],[5,2,'Devon','Clarke','Adoption Counselor','2022-02-01',36500],[6,3,'Priya','Nair','Shelter Manager','2020-07-11',49500],[7,3,'Tom','Walsh','Vet Tech','2021-11-05',40000],[8,4,'Sofia','Reyes','Shelter Manager','2017-05-22',54000],[9,4,'Ben','Foster','Adoption Counselor','2023-01-09',35000],[10,4,'Grace','Kim','Vet Tech','2019-08-14',42500]];
+const animals=[[1,1,'Biscuit','Dog','Beagle','2021-04-12','2023-01-05','adopted'],[2,1,'Luna','Cat','Domestic Shorthair','2022-02-20','2023-02-18','available'],[3,1,'Rocky','Dog','Boxer','2020-11-02','2023-03-01','adopted'],[4,1,'Pepper','Cat','Siamese','2021-07-15','2023-03-20','medical_hold'],[5,1,'Nibbles','Rabbit','Holland Lop','2022-05-01','2023-04-02','available'],[6,2,'Max','Dog','Labrador','2019-09-09','2022-12-15','adopted'],[7,2,'Coco','Cat','Maine Coon','2021-01-01','2023-01-22','available'],[8,2,'Daisy','Dog','Poodle Mix','2022-08-08','2023-05-10','fostered'],[9,2,'Tweety','Bird','Canary','2023-01-01','2023-06-01','available'],[10,2,'Shadow','Cat','Domestic Longhair','2020-03-03','2023-02-11','adopted'],[11,3,'Buddy','Dog','Golden Retriever','2021-06-06','2023-01-30','adopted'],[12,3,'Milo','Cat','Tabby','2022-04-04','2023-03-15','available'],[13,3,'Peanut','Rabbit','Netherland Dwarf','2022-09-09','2023-04-20','medical_hold'],[14,3,'Ziggy','Bird','Parakeet','2023-02-02','2023-05-05','available'],[15,3,'Bella','Dog','Beagle Mix','2020-12-12','2023-02-28','adopted'],[16,4,'Charlie','Dog','Dachshund','2021-03-03','2023-01-10','adopted'],[17,4,'Whiskers','Cat','Persian','2019-10-10','2022-11-11','available'],[18,4,'Thumper','Rabbit','Lionhead','2022-06-06','2023-03-03','available'],[19,4,'Sunny','Bird','Cockatiel','2022-12-12','2023-04-04','fostered'],[20,4,'Duke','Dog','German Shepherd','2020-05-05','2023-02-02','adopted'],[21,1,'Mittens','Cat','Domestic Shorthair','2021-11-11','2023-05-15','available'],[22,1,'Bruno','Dog','Bulldog','2019-02-02','2022-10-01','adopted'],[23,2,'Olive','Cat','Tabby','2022-07-07','2023-06-10','available'],[24,2,'Rex','Dog','Rottweiler','2020-08-08','2023-01-18','medical_hold'],[25,3,'Hazel','Dog','Corgi','2021-09-09','2023-02-14','available'],[26,3,'Cotton','Rabbit','Angora','2022-10-10','2023-05-01','available'],[27,4,'Simon','Cat','Ragdoll','2021-12-12','2023-03-25','adopted'],[28,4,'Rosie','Dog','Cocker Spaniel','2020-01-01','2023-01-01','adopted'],[29,2,'Kiwi','Bird','Lovebird','2023-03-03','2023-06-15','available'],[30,1,'Gus','Dog','Mastiff','2019-06-06','2022-09-09','adopted']];
+const adopters=[[1,'Ellen','Park','Columbus','OH','2022-11-01'],[2,'Marcus','Diaz','Columbus','OH','2023-01-15'],[3,'Sarah','Lee','Cleveland','OH','2022-12-05'],[4,'Nathan','Cole','Cleveland','OH','2023-02-20'],[5,'Ivy','Chen','Cincinnati','OH','2023-01-10'],[6,'Owen','Price','Cincinnati','OH','2023-03-01'],[7,'Ravi','Patel','Dayton','OH','2022-10-20'],[8,'Julia','Moore','Dayton','OH','2023-02-01'],[9,'Carlos','Ruiz','Columbus','OH','2023-03-15'],[10,'Hannah','Scott','Columbus','OH','2022-09-01'],[11,'Leo','Adams','Cleveland','OH','2023-04-01'],[12,'Nina','Ward','Cleveland','OH','2023-01-05'],[13,'Derek','Hughes','Cincinnati','OH','2022-11-20'],[14,'Faith','Bell','Cincinnati','OH','2023-05-01'],[15,'Tariq','Hassan','Dayton','OH','2023-02-15'],[16,'Molly','James','Dayton','OH','2022-12-25'],[17,'Victor','Stone','Columbus','OH','2023-04-10'],[18,'Aria','Fox','Cleveland','OH','2023-03-20'],[19,'Sam','Reed','Cincinnati','OH','2022-10-05'],[20,'Piper','Long','Dayton','OH','2023-05-20']];
+const adoptions=[[1,1,1,2,'2023-01-20',150],[2,3,2,2,'2023-03-10',175],[3,6,3,5,'2023-01-05',160],[4,10,4,5,'2023-02-25',80],[5,11,5,6,'2023-02-10',190],[6,15,6,6,'2023-03-15',145],[7,16,7,9,'2023-01-25',155],[8,20,8,9,'2023-02-20',200],[9,22,9,2,'2022-10-15',165],[10,27,10,9,'2023-04-01',90],[11,28,11,8,'2023-01-10',140],[12,30,12,3,'2022-09-25',210]];
+const medical=[[1,4,'2023-03-22','Dental cleaning',120,'Dr. Alvarez'],[2,4,'2023-04-05','Follow-up checkup',60,'Dr. Alvarez'],[3,13,'2023-04-21','Respiratory infection treatment',85,'Dr. Kim'],[4,13,'2023-05-01','Follow-up checkup',45,'Dr. Kim'],[5,24,'2023-01-19','Leg injury treatment',210,'Dr. Patel'],[6,24,'2023-02-02','Follow-up X-ray',150,'Dr. Patel'],[7,2,'2023-02-19','Routine vaccination',35,'Dr. Alvarez'],[8,5,'2023-04-03','Routine vaccination',30,'Dr. Alvarez'],[9,7,'2023-01-23','Routine vaccination',35,'Dr. Nolan'],[10,9,'2023-06-02','Wellness exam',25,'Dr. Nolan'],[11,12,'2023-03-16','Routine vaccination',35,'Dr. Kim'],[12,17,'2022-11-12','Dental cleaning',110,'Dr. Adebayo'],[13,18,'2023-03-04','Wellness exam',28,'Dr. Adebayo'],[14,25,'2023-02-15','Routine vaccination',35,'Dr. Kim'],[15,26,'2023-05-02','Wellness exam',28,'Dr. Kim']];
+
+const SEED_SQL = [
+  insertRows('shelters','shelter_id,name,city,state,capacity',shelters),
+  insertRows('staff','staff_id,shelter_id,first_name,last_name,role,hire_date,salary',staff),
+  insertRows('animals','animal_id,shelter_id,name,species,breed,birth_date,intake_date,status',animals),
+  insertRows('adopters','adopter_id,first_name,last_name,city,state,signup_date',adopters),
+  insertRows('adoptions','adoption_id,animal_id,adopter_id,staff_id,adoption_date,fee',adoptions),
+  insertRows('medical_records','record_id,animal_id,visit_date,description,cost,vet_name',medical),
+].join('\n');
+
+const SCHEMA_REFERENCE = [
+  { table:'shelters', columns:[
+    ['shelter_id','integer, primary key'],
+    ['name','text'],
+    ['city','text'],
+    ['state','text'],
+    ['capacity','integer'],
+  ]},
+  { table:'staff', columns:[
+    ['staff_id','integer, primary key'],
+    ['shelter_id','integer, references shelters'],
+    ['first_name','text'],
+    ['last_name','text'],
+    ['role','text'],
+    ['hire_date','date'],
+    ['salary','numeric'],
+  ]},
+  { table:'animals', columns:[
+    ['animal_id','integer, primary key'],
+    ['shelter_id','integer, references shelters'],
+    ['name','text'],
+    ['species','text'],
+    ['breed','text'],
+    ['birth_date','date'],
+    ['intake_date','date'],
+    ['status','text — \'available\', \'adopted\', \'medical_hold\', or \'fostered\''],
+  ]},
+  { table:'adopters', columns:[
+    ['adopter_id','integer, primary key'],
+    ['first_name','text'],
+    ['last_name','text'],
+    ['city','text'],
+    ['state','text'],
+    ['signup_date','date'],
+  ]},
+  { table:'adoptions', columns:[
+    ['adoption_id','integer, primary key'],
+    ['animal_id','integer, references animals'],
+    ['adopter_id','integer, references adopters'],
+    ['staff_id','integer, references staff'],
+    ['adoption_date','date'],
+    ['fee','numeric'],
+  ]},
+  { table:'medical_records', columns:[
+    ['record_id','integer, primary key'],
+    ['animal_id','integer, references animals'],
+    ['visit_date','date'],
+    ['description','text'],
+    ['cost','numeric'],
+    ['vet_name','text'],
+  ]},
+];
+
+/* ---------------------------- engine helpers (PGlite) ---------------------------- */
+
+let mainDb = null;
+
+async function initDb(){
+  mainDb = new PGlite();
+  await mainDb.exec(SCHEMA_SQL);
+  await mainDb.exec(SEED_SQL);
+}
+
+function pgResToTable(res){
+  if(!res || !res.fields || !res.fields.length) return {columns:[], values:[]};
+  const columns = res.fields.map(f=>f.name);
+  const values = res.rows.map(row => columns.map(c=>row[c]));
+  return {columns, values};
+}
+
+// Runs student SQL read-only: wrapped in a transaction that always rolls back,
+// so nothing they type (even DELETE/DROP) can damage the shared dataset.
+async function runReadOnlyStudentSQL(sql){
+  try{
+    const results = await mainDb.exec(`BEGIN;\n${sql}\nROLLBACK;`);
+    const last = results[results.length - 2]; // last statement before ROLLBACK
+    return { ok:true, table: pgResToTable(last) };
+  }catch(e){
+    await mainDb.exec('ROLLBACK;').catch(()=>{});
+    return { ok:false, error: e.message };
+  }
+}
+
+async function runSolutionSQL(sql){
+  const res = await mainDb.query(sql);
+  return pgResToTable(res);
+}
+
+// DDL exercises run in an isolated, wiped-clean "scratch" schema each time,
+// so table-creation mistakes never touch the shared dataset or other exercises.
+async function runDdlCheck(ex, studentSql){
+  await mainDb.exec('DROP SCHEMA IF EXISTS scratch CASCADE; CREATE SCHEMA scratch;');
+  await mainDb.exec('SET search_path TO scratch;');
+  try{
+    if(ex.setupSql) await mainDb.exec(ex.setupSql);
+    try{
+      await mainDb.exec(studentSql);
+    }catch(e){
+      return { ok:false, error: e.message };
+    }
+    const results = [];
+    for(const a of ex.assertions){
+      results.push({ desc:a.desc, pass: await a.fn(mainDb) });
+    }
+    return { ok:true, results };
+  } finally {
+    await mainDb.exec('SET search_path TO public;').catch(()=>{});
+  }
+}
+
+async function tableExists(d, name){
+  const r = await d.query(`SELECT 1 FROM information_schema.tables WHERE table_schema='scratch' AND lower(table_name)=lower($1);`, [name]);
+  return r.rows.length>0;
+}
+async function columnExists(d, table, col){
+  const r = await d.query(`SELECT 1 FROM information_schema.columns WHERE table_schema='scratch' AND lower(table_name)=lower($1) AND lower(column_name)=lower($2);`, [table, col]);
+  return r.rows.length>0;
+}
+async function rowCount(d, table){
+  const r = await d.query(`SELECT COUNT(*)::int AS c FROM ${table};`);
+  return r.rows[0].c;
+}
+async function insertFails(d, sql){
+  try{ await d.exec(sql); return false; }
+  catch(e){ return true; }
+}
+
+function normalizeVal(v){
+  if(v===null || v===undefined) return 'NULL';
+  const n = typeof v === 'number' ? v : (typeof v === 'string' && v.trim()!=='' && !isNaN(Number(v)) ? Number(v) : null);
+  if(n !== null) return (Math.round(n*10000)/10000).toString();
+  return String(v).trim();
+}
+function compareResults(studentRes, solutionRes){
+  if(studentRes.values.length !== solutionRes.values.length) return false;
+  if(solutionRes.values.length===0) return studentRes.values.length===0;
+  if(studentRes.values[0].length !== solutionRes.values[0].length) return false;
+  const norm = rows => rows.map(r => r.map(normalizeVal).join('\u0001')).sort();
+  const a = norm(studentRes.values), b = norm(solutionRes.values);
+  return a.length===b.length && a.every((v,i)=>v===b[i]);
+}
+
+// Checks raw (pre-normalized) values for decimal precision, so an answer that's
+// numerically right but wasn't actually rounded (e.g. skipped ROUND()) is caught —
+// compareResults alone can't tell, since it normalizes 155.0000000000000000 and
+// 155.00 to the same value.
+function exceedsMaxDecimals(table, maxDecimals){
+  for(const row of table.values){
+    for(const v of row){
+      if(v===null || v===undefined) continue;
+      const s = String(v);
+      if(!/^-?\d+(\.\d+)?$/.test(s.trim())) continue; // skip non-numeric-looking values
+      const dot = s.indexOf('.');
+      const decimals = dot===-1 ? 0 : s.length - dot - 1;
+      if(decimals > maxDecimals) return true;
+    }
+  }
+  return false;
+}
+
+/* ---------------------------- exercise data ---------------------------- */
+
+const MODULES = [
+{
+  id:'m1', num:1,
+  title:'Getting Started: Databases, Tables & Data Types',
+  chapters:'Practical SQL ch. 1, 2, 4',
+  blurb:'Set up a coding environment, create your first tables, and choose the right data type for each column.',
+  exercises:[
+    { id:'1.1', type:'ddl',
+      prompt:`Create a table called <b>volunteers</b> with these columns: <code>volunteer_id</code> (integer primary key), <code>first_name</code> (text, required), <code>last_name</code> (text, required), <code>join_date</code> (date), and <code>hours_per_week</code> (numeric).`,
+      hint:'In PostgreSQL this would look like: CREATE TABLE volunteers ( volunteer_id INTEGER PRIMARY KEY, ... ); remember NOT NULL for required columns.',
+      solutionSql:`CREATE TABLE volunteers (
+  volunteer_id INTEGER PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  join_date DATE,
+  hours_per_week NUMERIC
+);`,
+      setupSql:null,
+      assertions:[
+        {desc:'Table "volunteers" exists', fn:d=>tableExists(d,'volunteers')},
+        {desc:'Has a first_name column', fn:d=>columnExists(d,'volunteers','first_name')},
+        {desc:'Has a last_name column', fn:d=>columnExists(d,'volunteers','last_name')},
+        {desc:'Has a hours_per_week column', fn:d=>columnExists(d,'volunteers','hours_per_week')},
+      ]
+    },
+    { id:'1.2', type:'ddl',
+      prompt:`The <code>volunteers</code> table already exists (columns: volunteer_id, first_name, last_name, join_date, hours_per_week). Write an <b>INSERT</b> statement that adds one volunteer of your choosing, filling in every column.`,
+      hint:'INSERT INTO volunteers (volunteer_id, first_name, last_name, join_date, hours_per_week) VALUES (1, \'Ana\', \'Diaz\', \'2023-01-01\', 6);',
+      solutionSql:`INSERT INTO volunteers (volunteer_id, first_name, last_name, join_date, hours_per_week)
+VALUES (1, 'Ana', 'Diaz', '2023-01-01', 6);`,
+      setupSql:`CREATE TABLE volunteers (
+  volunteer_id INTEGER PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  join_date DATE,
+  hours_per_week NUMERIC
+);`,
+      assertions:[
+        {desc:'Exactly one row was inserted', fn:async d=>(await rowCount(d,'volunteers'))===1},
+        {desc:'first_name and last_name were provided', fn:async d=>{
+          const r = await d.query('SELECT first_name,last_name FROM volunteers;');
+          return r.rows.length>0 && !!r.rows[0].first_name && !!r.rows[0].last_name;
+        }},
+      ]
+    },
+    { id:'1.3', type:'quiz',
+      prompt:`Which PostgreSQL data type is the best fit for an animal's exact weight, such as <code>4.25</code> kilograms?`,
+      options:['NUMERIC','TEXT','BOOLEAN','DATE'],
+      correctIndex:0,
+      solutionText:'NUMERIC (or DECIMAL) stores exact fixed-point values, which is what you want for a precise measurement like weight. TEXT would let you store anything (including invalid data), and it can\'t be used in math directly.'
+    },
+    { id:'1.4', type:'quiz',
+      prompt:`A column that only ever needs to record whether an animal has been spayed/neutered (yes or no) should use which data type?`,
+      options:['TEXT','BOOLEAN','INTEGER','NUMERIC'],
+      correctIndex:1,
+      solutionText:'BOOLEAN stores true/false values directly and makes your intent clear, instead of relying on text like \'yes\'/\'no\' or numbers like 1/0.'
+    },
+    { id:'1.5', type:'ddl',
+      prompt:`Create a table called <b>foster_homes</b> with <code>foster_id</code> (integer primary key), <code>street_address</code> (text, required), and <code>start_date</code> (date). Then insert one row, using <code>CURRENT_DATE</code> for the start date instead of typing a literal date.`,
+      hint:"CURRENT_DATE is a built-in value in PostgreSQL that returns today's date — no quotes needed.",
+      solutionSql:`CREATE TABLE foster_homes (
+  foster_id INTEGER PRIMARY KEY,
+  street_address TEXT NOT NULL,
+  start_date DATE
+);
+INSERT INTO foster_homes (foster_id, street_address, start_date)
+VALUES (1, '123 Elm St', CURRENT_DATE);`,
+      setupSql:null,
+      assertions:[
+        {desc:'Table "foster_homes" exists', fn:d=>tableExists(d,'foster_homes')},
+        {desc:'Has a street_address column', fn:d=>columnExists(d,'foster_homes','street_address')},
+        {desc:'One row was inserted', fn:async d=>(await rowCount(d,'foster_homes'))===1},
+      ]
+    },
+  ]
+},
+{
+  id:'m2', num:2,
+  title:'Data Models & SQL SELECT Queries',
+  chapters:'Practical SQL ch. 3, 5, 6',
+  blurb:'Practice basic SELECT, WHERE, ORDER BY and DISTINCT, plus simple math and stats — the everyday backbone of querying.',
+  exercises:[
+    { id:'2.1', type:'query',
+      prompt:`List the <b>name</b> and <b>species</b> of every animal whose <code>status</code> is <code>'available'</code>, ordered by name.`,
+      hint:'SELECT ... FROM animals WHERE status = \'available\' ORDER BY name;',
+      solutionSql:`SELECT name, species FROM animals WHERE status = 'available' ORDER BY name;`,
+    },
+    { id:'2.2', type:'query',
+      prompt:`List each distinct <b>city</b> that appears in the <code>adopters</code> table, ordered alphabetically.`,
+      hint:'DISTINCT removes duplicate values from your result set.',
+      solutionSql:`SELECT DISTINCT city FROM adopters ORDER BY city;`,
+    },
+    { id:'2.3', type:'query',
+      prompt:`List the <b>name</b> and <b>breed</b> of every <code>'Dog'</code> whose <code>status</code> is <code>'available'</code>, ordered by name. (Filter on two conditions at once.)`,
+      hint:'Combine two conditions with AND in your WHERE clause.',
+      solutionSql:`SELECT name, breed FROM animals WHERE species = 'Dog' AND status = 'available' ORDER BY name;`,
+    },
+    { id:'2.4', type:'query',
+      prompt:`Find the <b>average adoption fee</b> across all adoptions, rounded to 2 decimal places. Name the result column <code>avg_fee</code>.`,
+      hint:'ROUND(AVG(fee), 2) AS avg_fee',
+      solutionSql:`SELECT ROUND(AVG(fee), 2) AS avg_fee FROM adoptions;`,
+      maxDecimals:2,
+    },
+    { id:'2.5', type:'quiz',
+      prompt:`Which command does Practical SQL use to load data from a CSV file straight into a PostgreSQL table?`,
+      options:['LOAD DATA','COPY','IMPORT','INSERT FROM FILE'],
+      correctIndex:1,
+      solutionText:'COPY is PostgreSQL\'s built-in command for fast bulk import/export between a table and a file (ch. 5).'
+    },
+  ]
+},
+{
+  id:'m3', num:3,
+  title:'The Relational Database Model & SQL Joins',
+  chapters:'Practical SQL ch. 7, 9',
+  blurb:'Combine tables with JOIN, and summarize data with GROUP BY and HAVING.',
+  exercises:[
+    { id:'3.1', type:'query',
+      prompt:`For every animal with <code>status = 'available'</code>, list the animal's <b>name</b>, <b>species</b>, and the name of its shelter (as <code>shelter_name</code>). Order by animal name.`,
+      hint:'INNER JOIN animals to shelters on shelter_id.',
+      solutionSql:`SELECT a.name AS animal_name, a.species, s.name AS shelter_name
+FROM animals a
+INNER JOIN shelters s ON a.shelter_id = s.shelter_id
+WHERE a.status = 'available'
+ORDER BY a.name;`,
+    },
+    { id:'3.2', type:'query',
+      prompt:`For every shelter, show its <b>name</b> and the total number of animals it has (as <code>animal_count</code>), even if that number is zero. Order by shelter name.`,
+      hint:'A LEFT JOIN keeps every shelter row even when there are no matching animals — use COUNT on the animals side.',
+      solutionSql:`SELECT s.name, COUNT(a.animal_id) AS animal_count
+FROM shelters s
+LEFT JOIN animals a ON a.shelter_id = s.shelter_id
+GROUP BY s.shelter_id, s.name
+ORDER BY s.name;`,
+    },
+    { id:'3.3', type:'query',
+      prompt:`Show each <b>species</b> and how many animals of that species exist (as <code>total</code>), ordered by species.`,
+      hint:'GROUP BY species, COUNT(*).',
+      solutionSql:`SELECT species, COUNT(*) AS total FROM animals GROUP BY species ORDER BY species;`,
+    },
+    { id:'3.4', type:'query',
+      prompt:`List the <b>name</b> of each shelter along with its number of adoptions (as <code>adoption_count</code>), but only include shelters with <b>more than 2</b> adoptions. Order by shelter name.`,
+      hint:'HAVING filters on an aggregated value, after GROUP BY — WHERE cannot do this.',
+      solutionSql:`SELECT s.name, COUNT(ad.adoption_id) AS adoption_count
+FROM shelters s
+INNER JOIN animals a ON a.shelter_id = s.shelter_id
+INNER JOIN adoptions ad ON ad.animal_id = a.animal_id
+GROUP BY s.shelter_id, s.name
+HAVING COUNT(ad.adoption_id) > 2
+ORDER BY s.name;`,
+    },
+    { id:'3.5', type:'query',
+      prompt:`For every adoption, list the animal's name (<code>animal_name</code>), the adopter's full name (<code>adopter_name</code>, first + last with a space), the <code>fee</code>, and the staff member who processed it (<code>staff_name</code>, full name). Order by animal name. (Four tables, three joins.)`,
+      hint:"Use || to concatenate first_name and last_name, and join adoptions to animals, adopters, and staff.",
+      solutionSql:`SELECT an.name AS animal_name,
+       ap.first_name || ' ' || ap.last_name AS adopter_name,
+       ad.fee,
+       st.first_name || ' ' || st.last_name AS staff_name
+FROM adoptions ad
+INNER JOIN animals an ON an.animal_id = ad.animal_id
+INNER JOIN adopters ap ON ap.adopter_id = ad.adopter_id
+INNER JOIN staff st ON st.staff_id = ad.staff_id
+ORDER BY an.name;`,
+    },
+  ]
+},
+{
+  id:'m4', num:4,
+  title:'ER Models & SQL Subqueries',
+  chapters:'Practical SQL ch. 13',
+  blurb:'Nest queries inside queries: subqueries in WHERE and FROM, correlated conditions, and common table expressions (WITH).',
+  exercises:[
+    { id:'4.1', type:'query',
+      prompt:`List the <b>name</b> and <b>fee</b> of every adopted animal whose fee was <b>above the average</b> fee across all adoptions. Order by fee, highest first.`,
+      hint:'Put a subquery — (SELECT AVG(fee) FROM adoptions) — directly inside the WHERE clause.',
+      solutionSql:`SELECT an.name, ad.fee
+FROM adoptions ad
+INNER JOIN animals an ON an.animal_id = ad.animal_id
+WHERE ad.fee > (SELECT AVG(fee) FROM adoptions)
+ORDER BY ad.fee DESC;`,
+    },
+    { id:'4.2', type:'query',
+      prompt:`Using a subquery in the FROM clause, list each shelter's <b>name</b> and total adoption <b>revenue</b>, but only for shelters whose revenue is <b>greater than 400</b>. Order by revenue, highest first.`,
+      hint:'Build the per-shelter revenue as a derived table first (SUM of fee, grouped by shelter), then filter the outer query on revenue.',
+      solutionSql:`SELECT name, revenue FROM (
+  SELECT s.name AS name, SUM(ad.fee) AS revenue
+  FROM shelters s
+  INNER JOIN animals a ON a.shelter_id = s.shelter_id
+  INNER JOIN adoptions ad ON ad.animal_id = a.animal_id
+  GROUP BY s.shelter_id, s.name
+) rev
+WHERE revenue > 400
+ORDER BY revenue DESC;`,
+    },
+    { id:'4.3', type:'query',
+      prompt:`List the <b>name</b> of every animal that has <b>more than one</b> medical record, along with its visit count (as <code>visit_count</code>). Order by name.`,
+      hint:'Join animals to medical_records, GROUP BY animal, then HAVING COUNT(*) > 1.',
+      solutionSql:`SELECT an.name, COUNT(*) AS visit_count
+FROM medical_records mr
+INNER JOIN animals an ON an.animal_id = mr.animal_id
+GROUP BY an.animal_id, an.name
+HAVING COUNT(*) > 1
+ORDER BY an.name;`,
+    },
+    { id:'4.4', type:'query',
+      prompt:`Using a <b>WITH</b> clause (a common table expression), first compute total adoption revenue per shelter, then select only the shelter (<code>name</code>, <code>revenue</code>) with the <b>highest</b> revenue.`,
+      hint:'WITH shelter_revenue AS ( ... ) SELECT ... WHERE revenue = (SELECT MAX(revenue) FROM shelter_revenue);',
+      solutionSql:`WITH shelter_revenue AS (
+  SELECT s.shelter_id, s.name, SUM(ad.fee) AS revenue
+  FROM shelters s
+  INNER JOIN animals a ON a.shelter_id = s.shelter_id
+  INNER JOIN adoptions ad ON ad.animal_id = a.animal_id
+  GROUP BY s.shelter_id, s.name
+)
+SELECT name, revenue FROM shelter_revenue
+WHERE revenue = (SELECT MAX(revenue) FROM shelter_revenue);`,
+    },
+    { id:'4.5', type:'query',
+      prompt:`List the <b>name</b> and <b>species</b> of every animal that has <b>never</b> been adopted (its <code>animal_id</code> never appears in <code>adoptions</code>). Order by name.`,
+      hint:'NOT IN (SELECT animal_id FROM adoptions) — or NOT EXISTS with a correlated subquery.',
+      solutionSql:`SELECT name, species FROM animals
+WHERE animal_id NOT IN (SELECT animal_id FROM adoptions)
+ORDER BY name;`,
+    },
+  ]
+},
+{
+  id:'m5', num:5,
+  title:'Advanced ER Modeling & SQL Implementation',
+  chapters:'Practical SQL ch. 8',
+  blurb:'Turn a design into real table structure: primary/foreign keys, CHECK and UNIQUE constraints, and altering existing tables.',
+  exercises:[
+    { id:'5.1', type:'ddl',
+      prompt:`Create a table called <b>equipment</b> with <code>equipment_id</code> (integer primary key), <code>name</code> (text, required), and <code>purchase_cost</code> (numeric) — and add a <b>CHECK constraint</b> so that <code>purchase_cost</code> can never be negative.`,
+      hint:'CHECK (purchase_cost >= 0) can be added right after the column definition.',
+      solutionSql:`CREATE TABLE equipment (
+  equipment_id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  purchase_cost NUMERIC CHECK (purchase_cost >= 0)
+);`,
+      setupSql:null,
+      assertions:[
+        {desc:'Table "equipment" exists', fn:d=>tableExists(d,'equipment')},
+        {desc:'A negative purchase_cost is rejected', fn:d=>insertFails(d,`INSERT INTO equipment (equipment_id,name,purchase_cost) VALUES (1,'Leash',-5);`)},
+        {desc:'A valid row can still be inserted', fn:async d=>!(await insertFails(d,`INSERT INTO equipment (equipment_id,name,purchase_cost) VALUES (2,'Crate',40);`))},
+      ]
+    },
+    { id:'5.2', type:'ddl',
+      prompt:`A simplified <code>animals_mini(animal_id, name)</code> table already exists with one row (animal_id 1). Create a table <b>foster_assignments</b> with <code>assignment_id</code> (integer primary key), <code>animal_id</code> (integer, required, a <b>foreign key</b> referencing <code>animals_mini(animal_id)</code>), and <code>start_date</code> (date, required).`,
+      hint:'REFERENCES animals_mini(animal_id) inside the column definition creates the foreign key.',
+      solutionSql:`CREATE TABLE foster_assignments (
+  assignment_id INTEGER PRIMARY KEY,
+  animal_id INTEGER NOT NULL REFERENCES animals_mini(animal_id),
+  start_date DATE NOT NULL
+);`,
+      setupSql:`CREATE TABLE animals_mini (animal_id INTEGER PRIMARY KEY, name TEXT);
+INSERT INTO animals_mini VALUES (1,'Biscuit');`,
+      assertions:[
+        {desc:'Table "foster_assignments" exists', fn:d=>tableExists(d,'foster_assignments')},
+        {desc:'Referencing a non-existent animal_id (999) fails', fn:d=>insertFails(d,`INSERT INTO foster_assignments VALUES (1,999,'2023-01-01');`)},
+        {desc:'Referencing a real animal_id (1) succeeds', fn:async d=>!(await insertFails(d,`INSERT INTO foster_assignments VALUES (2,1,'2023-01-01');`))},
+      ]
+    },
+    { id:'5.3', type:'ddl',
+      prompt:`Create a table called <b>microchip_registry</b> with <code>chip_number</code> (text, required, and <b>unique</b>) and <code>animal_id</code> (integer).`,
+      hint:'UNIQUE NOT NULL after the column type enforces both rules at once.',
+      solutionSql:`CREATE TABLE microchip_registry (
+  chip_number TEXT UNIQUE NOT NULL,
+  animal_id INTEGER
+);`,
+      setupSql:null,
+      assertions:[
+        {desc:'Table "microchip_registry" exists', fn:d=>tableExists(d,'microchip_registry')},
+        {desc:'First chip number inserts fine', fn:async d=>!(await insertFails(d,`INSERT INTO microchip_registry VALUES ('CHIP001',1);`))},
+        {desc:'A duplicate chip_number is rejected', fn:d=>insertFails(d,`INSERT INTO microchip_registry VALUES ('CHIP001',2);`)},
+      ]
+    },
+    { id:'5.4', type:'quiz',
+      prompt:`Which constraint guarantees that a column's values are both <b>unique</b> and <b>never null</b>, and is typically used to identify each row in a table?`,
+      options:['CHECK','UNIQUE','PRIMARY KEY','FOREIGN KEY'],
+      correctIndex:2,
+      solutionText:'A PRIMARY KEY combines NOT NULL and UNIQUE, and it\'s what other tables reference through foreign keys.'
+    },
+    { id:'5.5', type:'ddl',
+      prompt:`Create a table called <b>staff_shifts</b> with <code>staff_id</code> (integer), <code>shift_date</code> (date), and <code>shift_type</code> (text). Add two <b>table-level, named constraints</b>: a <code>UNIQUE</code> constraint on the combination of <code>staff_id</code> and <code>shift_date</code> (no staff member can be scheduled twice on the same day), and a <code>CHECK</code> constraint restricting <code>shift_type</code> to one of <code>'AM'</code>, <code>'PM'</code>, or <code>'OVERNIGHT'</code>.`,
+      hint:`Table-level constraints are listed after the columns, each with its own name:
+CONSTRAINT unique_staff_shift UNIQUE (staff_id, shift_date),
+CONSTRAINT check_shift_type CHECK (shift_type IN ('AM','PM','OVERNIGHT'))`,
+      solutionSql:`CREATE TABLE staff_shifts (
+  staff_id INTEGER,
+  shift_date DATE,
+  shift_type TEXT,
+  CONSTRAINT unique_staff_shift UNIQUE (staff_id, shift_date),
+  CONSTRAINT check_shift_type CHECK (shift_type IN ('AM','PM','OVERNIGHT'))
+);`,
+      setupSql:null,
+      assertions:[
+        {desc:'Table "staff_shifts" exists', fn:d=>tableExists(d,'staff_shifts')},
+        {desc:'A first shift for staff 1 on a date inserts fine', fn:async d=>!(await insertFails(d,`INSERT INTO staff_shifts VALUES (1,'2023-01-01','AM');`))},
+        {desc:'A second shift for the same staff member on the same date is rejected (UNIQUE)', fn:d=>insertFails(d,`INSERT INTO staff_shifts VALUES (1,'2023-01-01','PM');`)},
+        {desc:'The same staff member on a different date is allowed', fn:async d=>!(await insertFails(d,`INSERT INTO staff_shifts VALUES (1,'2023-01-02','AM');`))},
+        {desc:'An invalid shift_type value is rejected (CHECK ... IN)', fn:d=>insertFails(d,`INSERT INTO staff_shifts VALUES (2,'2023-01-01','NIGHT');`)},
+      ]
+    },
+    { id:'5.6', type:'ddl',
+      prompt:`Create two tables that use <b>compound (composite) keys</b> instead of single-column keys.<br><br>
+      First, create <b>shelter_program</b> — a wellness/training program a shelter offers — with <code>shelter_id</code> (integer), <code>program_code</code> (text), and <code>program_name</code> (text, required). Since the same <code>program_code</code> can be reused by different shelters, no single column uniquely identifies a row — give it a <b>composite primary key</b> on <code>(shelter_id, program_code)</code>.<br><br>
+      Then create <b>animal_enrollment</b> with <code>animal_id</code> (integer), <code>shelter_id</code> (integer), <code>program_code</code> (text), and <code>enrolled_date</code> (date, required). Give it a <b>composite primary key</b> on <code>(animal_id, shelter_id, program_code)</code> — so the same animal can't be enrolled in the same program twice — and a <b>composite foreign key</b> on <code>(shelter_id, program_code)</code> referencing <code>shelter_program(shelter_id, program_code)</code>.`,
+      hint:`A composite key just lists more than one column inside the parentheses:
+CONSTRAINT pk_shelter_program PRIMARY KEY (shelter_id, program_code)
+...and a composite foreign key mirrors that same column pair on both sides:
+CONSTRAINT fk_animal_enrollment FOREIGN KEY (shelter_id, program_code) REFERENCES shelter_program (shelter_id, program_code)`,
+      solutionSql:`CREATE TABLE shelter_program (
+  shelter_id INTEGER,
+  program_code TEXT,
+  program_name TEXT NOT NULL,
+
+  CONSTRAINT pk_shelter_program PRIMARY KEY (shelter_id, program_code)
+);
+
+CREATE TABLE animal_enrollment (
+  animal_id INTEGER,
+  shelter_id INTEGER,
+  program_code TEXT,
+  enrolled_date DATE NOT NULL,
+
+  CONSTRAINT pk_animal_enrollment PRIMARY KEY (animal_id, shelter_id, program_code),
+  CONSTRAINT fk_animal_enrollment FOREIGN KEY (shelter_id, program_code)
+    REFERENCES shelter_program (shelter_id, program_code)
+);`,
+      setupSql:null,
+      assertions:[
+        {desc:'Table "shelter_program" exists', fn:d=>tableExists(d,'shelter_program')},
+        {desc:'Table "animal_enrollment" exists', fn:d=>tableExists(d,'animal_enrollment')},
+        {desc:"A program (1, 'WELCOME101') inserts fine", fn:async d=>!(await insertFails(d,`INSERT INTO shelter_program VALUES (1,'WELCOME101','Welcome Orientation');`))},
+        {desc:"The same program_code at a different shelter (2, 'WELCOME101') is also allowed", fn:async d=>!(await insertFails(d,`INSERT INTO shelter_program VALUES (2,'WELCOME101','New Arrival Basics');`))},
+        {desc:'A duplicate (shelter_id, program_code) pair is rejected (composite PRIMARY KEY)', fn:d=>insertFails(d,`INSERT INTO shelter_program VALUES (1,'WELCOME101','Duplicate');`)},
+        {desc:"An enrollment for animal 5 in (1, 'WELCOME101') inserts fine", fn:async d=>!(await insertFails(d,`INSERT INTO animal_enrollment VALUES (5,1,'WELCOME101','2023-02-01');`))},
+        {desc:'The same animal enrolling in a different shelter\'s version of the program is also allowed', fn:async d=>!(await insertFails(d,`INSERT INTO animal_enrollment VALUES (5,2,'WELCOME101','2023-02-05');`))},
+        {desc:'Enrolling the same animal in the exact same program twice is rejected (composite PRIMARY KEY)', fn:d=>insertFails(d,`INSERT INTO animal_enrollment VALUES (5,1,'WELCOME101','2023-03-01');`)},
+        {desc:'An enrollment referencing a (shelter_id, program_code) pair that doesn\'t exist is rejected (composite FOREIGN KEY)', fn:d=>insertFails(d,`INSERT INTO animal_enrollment VALUES (6,1,'NOTREAL','2023-02-01');`)},
+      ]
+    },
+  ]
+},
+{
+  id:'m6', num:6,
+  title:'Normalization',
+  chapters:'Concept module — no new SQL syntax',
+  blurb:'This module is about design reasoning, not new SQL commands, so these exercises are conceptual rather than query-based.',
+  exercises:[
+    { id:'6.1', type:'quiz',
+      prompt:`A table stores one row per adopter, with a single column called <code>pets_adopted</code> containing values like <code>"Biscuit, Rocky, Bruno"</code>. What normalization problem is this?`,
+      options:['It violates First Normal Form (1NF) by storing a repeating group in one column','It violates Third Normal Form (3NF) via a transitive dependency','It is already fully normalized','It violates referential integrity'],
+      correctIndex:0,
+      solutionText:'1NF requires atomic values — each column should hold a single value, not a comma-separated list. The fix is a separate adoptions table with one row per animal-adopter pair, exactly like the PawPrint schema does.'
+    },
+    { id:'6.2', type:'quiz',
+      prompt:`Imagine a single wide table with columns (<code>adoption_id</code>, <code>animal_id</code>, <code>animal_species</code>) where the primary key is the combination of <code>adoption_id</code> and <code>animal_id</code>. Since <code>animal_species</code> depends only on <code>animal_id</code> — not on the full key — what's this problem called?`,
+      options:['A 1NF violation (non-atomic values)','A partial dependency (2NF violation)','A transitive dependency (3NF violation)','A missing foreign key'],
+      correctIndex:1,
+      solutionText:'2NF requires that every non-key column depend on the whole primary key. Here, animal_species only depends on part of the key (animal_id), which is exactly why PawPrint keeps species in the animals table, not repeated in adoptions.'
+    },
+    { id:'6.3', type:'quiz',
+      prompt:`Suppose someone designed a single <code>animals_wide</code> table with these attributes: <code>animal_id</code> (primary key), <code>name</code>, <code>species</code>, <code>shelter_id</code>, and <code>shelter_city</code>.<br><br>
+      Think about the functional dependencies here: <code>animal_id → shelter_id</code> (each animal belongs to one shelter), and separately <code>shelter_id → shelter_city</code> (each shelter is located in one city). Chaining those together gives <code>animal_id → shelter_id → shelter_city</code> — so <code>shelter_city</code> depends on the primary key only <i>indirectly</i>, through <code>shelter_id</code>, rather than depending on it directly. What's this pattern called?`,
+      options:['A transitive dependency (3NF violation)','A candidate key issue','A 1NF violation','Denormalization is required here'],
+      correctIndex:0,
+      solutionText:'This is a transitive dependency: animal_id → shelter_id → shelter_city, where shelter_city depends on the non-key attribute shelter_id rather than directly on the primary key animal_id. 3NF fixes this by moving shelter_city out into its own shelters table (keyed on shelter_id) and linking with a foreign key — which is exactly how PawPrint is structured.'
+    },
+    { id:'6.4', type:'reflect',
+      prompt:`Imagine one big spreadsheet with a row for every adoption, containing: <code>adopter_name</code>, <code>adopter_city</code>, <code>animal_name</code>, <code>animal_species</code>, <code>shelter_name</code>, <code>shelter_city</code>, and <code>fee</code>. In a few sentences, describe how you'd split this into normalized tables (like the ones PawPrint actually uses).`,
+      solutionText:`A reasonable 3NF design:
+• shelters (shelter_id, shelter_name, shelter_city, ...) — shelter facts live here once
+• animals (animal_id, shelter_id, animal_name, animal_species, ...) — links to its shelter by id
+• adopters (adopter_id, adopter_name, adopter_city, ...) — adopter facts live here once
+• adoptions (adoption_id, animal_id, adopter_id, fee, adoption_date) — the linking/fact table
+
+This removes repeated shelter and adopter details from every row, avoids update anomalies (e.g. a shelter changing cities), and matches the PawPrint schema you've been querying all along.`
+    },
+  ]
+},
+];
+
+/* ---------------------------- state & persistence ---------------------------- */
+
+let progress = {};
+let currentModule = 'm1';
+const drafts = {};
+
+async function loadProgress(){
+  try{
+    const res = await window.storage.get('pawprint-progress');
+    if(res && res.value) progress = JSON.parse(res.value);
+  }catch(e){ progress = {}; }
+}
+async function saveProgress(){
+  try{ await window.storage.set('pawprint-progress', JSON.stringify(progress)); }
+  catch(e){ /* non-fatal: progress just won't persist across sessions */ }
+}
+function markDone(exId){
+  if(!progress[exId]){ progress[exId]=true; saveProgress(); }
+}
+
+function totalExercises(){ return MODULES.reduce((n,m)=>n+m.exercises.length,0); }
+function doneExercises(){ return Object.keys(progress).filter(k=>progress[k]).length; }
+function moduleDone(mod){ return mod.exercises.filter(e=>progress[e.id]).length; }
+
+/* ---------------------------- rendering ---------------------------- */
+
+function renderSidebar(engineState){
+  const sb = document.getElementById('sidebar');
+  const done = doneExercises(), total = totalExercises();
+  const pct = total ? Math.round(done/total*100) : 0;
+  sb.innerHTML = `
+    <div class="brand">
+      <div class="kicker">CIS 310 · PRACTICAL SQL PRACTICE</div>
+      <h1>PawPrint DB Lab</h1>
+      <div class="sub">Run real PostgreSQL. Get instant feedback.</div>
+    </div>
+    <div class="engine-badge">
+      <span class="engine-dot ${engineState==='ready'?'':'loading'}"></span>
+      ${engineState==='ready' ? 'Postgres engine ready' : 'Loading Postgres engine…'}
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>OVERALL PROGRESS</span><span>${done}/${total}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div>
+      ${MODULES.map(m=>`
+        <button class="nav-mod ${m.id===currentModule?'active':''}" data-mod="${m.id}" ${engineState==='ready'?'':'disabled'}>
+          <span class="num">0${m.num}</span>${m.title.split(':')[0]}
+          <span class="count">${moduleDone(m)}/${m.exercises.length} complete</span>
+        </button>
+      `).join('')}
+    </div>
+    <button class="reset-btn" id="resetBtn" ${engineState==='ready'?'':'disabled'}>Reset all progress</button>
+  `;
+  sb.querySelectorAll('.nav-mod').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ currentModule = btn.dataset.mod; renderAll('ready'); window.scrollTo({top:0}); });
+  });
+  const resetBtn = document.getElementById('resetBtn');
+  if(resetBtn) resetBtn.addEventListener('click', async ()=>{
+    if(confirm('Reset progress for all exercises?')){
+      progress = {};
+      await saveProgress();
+      renderAll('ready');
+    }
+  });
+}
+
+function renderExercise(ex, mod){
+  const isDone = !!progress[ex.id];
+  const wrap = document.createElement('div');
+  wrap.className = 'exercise' + (isDone ? ' done' : '');
+  wrap.id = 'ex-'+ex.id.replace('.','-');
+
+  const head = document.createElement('div');
+  head.className = 'ex-head';
+  head.innerHTML = `<span class="ex-id">EXERCISE ${ex.id}</span><span class="ex-status ${isDone?'done':''}">${isDone?'✓ complete':'not started'}</span>`;
+  wrap.appendChild(head);
+
+  const prompt = document.createElement('p');
+  prompt.className = 'ex-prompt';
+  prompt.innerHTML = ex.prompt;
+  wrap.appendChild(prompt);
+
+  const feedbackDiv = document.createElement('div');
+  const resultDiv = document.createElement('div');
+
+  function setDone(){
+    markDone(ex.id);
+    head.querySelector('.ex-status').textContent='✓ complete';
+    head.querySelector('.ex-status').classList.add('done');
+    wrap.classList.add('done');
+    renderSidebar('ready');
+  }
+
+  if(ex.type==='query' || ex.type==='ddl'){
+    const ta = document.createElement('textarea');
+    ta.className = 'sql-input';
+    ta.spellcheck = false;
+    ta.placeholder = ex.type==='ddl' ? '-- write your SQL statement(s) here' : '-- write your SELECT query here';
+    ta.value = drafts[ex.id] || '';
+    ta.addEventListener('input', ()=>{ drafts[ex.id] = ta.value; });
+    wrap.appendChild(ta);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'btn-row';
+    const runBtn = document.createElement('button');
+    runBtn.className = 'btn';
+    runBtn.textContent = ex.type==='ddl' ? 'Run & Check' : 'Run Query';
+    const hintBtn = document.createElement('button');
+    hintBtn.className = 'btn secondary';
+    hintBtn.textContent = 'Hint';
+    const solBtn = document.createElement('button');
+    solBtn.className = 'btn secondary';
+    solBtn.textContent = 'Show Solution';
+    btnRow.appendChild(runBtn); btnRow.appendChild(hintBtn); btnRow.appendChild(solBtn);
+    wrap.appendChild(btnRow);
+
+    const hintBox = document.createElement('div');
+    hintBox.className = 'hint-box'; hintBox.style.display='none';
+    hintBox.innerHTML = ex.hint || '';
+    wrap.appendChild(hintBox);
+    hintBtn.addEventListener('click', ()=>{ hintBox.style.display = hintBox.style.display==='none' ? 'block' : 'none'; });
+
+    const solBox = document.createElement('div');
+    solBox.className = 'solution-box'; solBox.style.display='none';
+    solBox.innerHTML = `<strong>Sample solution:</strong><pre>${escapeHtml(ex.solutionSql)}</pre>`;
+    wrap.appendChild(solBox);
+    solBtn.addEventListener('click', ()=>{ solBox.style.display = solBox.style.display==='none' ? 'block' : 'none'; });
+
+    wrap.appendChild(feedbackDiv);
+    wrap.appendChild(resultDiv);
+
+    runBtn.addEventListener('click', async ()=>{
+      feedbackDiv.replaceChildren();
+      resultDiv.replaceChildren();
+      const studentSql = ta.value.trim();
+      if(!studentSql){ feedbackDiv.innerHTML = `<div class="feedback incorrect">Write a SQL statement first.</div>`; return; }
+      runBtn.disabled = true; runBtn.textContent = 'Running…';
+
+      if(ex.type==='query'){
+        const outcome = await runReadOnlyStudentSQL(studentSql);
+        if(!outcome.ok){
+          feedbackDiv.innerHTML = `<div class="feedback error">SQL error: ${escapeHtml(outcome.error)}</div>`;
+        } else {
+          renderTable(resultDiv, outcome.table);
+          const solTable = await runSolutionSQL(ex.solutionSql);
+          const valuesMatch = compareResults(outcome.table, solTable);
+          const failedPrecision = valuesMatch && ex.maxDecimals!==undefined && exceedsMaxDecimals(outcome.table, ex.maxDecimals);
+          const correct = valuesMatch && !failedPrecision;
+          if(correct){
+            feedbackDiv.innerHTML = `<div class="feedback correct">✓ Correct! Your result matches the expected output.</div>`;
+          } else if(failedPrecision){
+            feedbackDiv.innerHTML = `<div class="feedback incorrect">Your value is right, but it isn't actually rounded to ${ex.maxDecimals} decimal places — use ROUND(..., ${ex.maxDecimals}).</div>`;
+          } else {
+            feedbackDiv.innerHTML = `<div class="feedback incorrect">Not quite — your query ran, but the result doesn't match what's expected yet. Check the columns, filters, and sort order.</div>`;
+          }
+          if(correct) setDone();
+        }
+      } else { // ddl
+        const outcome = await runDdlCheck(ex, studentSql);
+        if(!outcome.ok){
+          feedbackDiv.innerHTML = `<div class="feedback error">SQL error while running your statement: ${escapeHtml(outcome.error)}</div>`;
+        } else {
+          const list = document.createElement('ul');
+          list.className = 'assert-list';
+          list.innerHTML = outcome.results.map(r=>`<li class="${r.pass?'pass':'fail'}">${escapeHtml(r.desc)}</li>`).join('');
+          resultDiv.replaceChildren(list);
+          const allPass = outcome.results.every(r=>r.pass);
+          feedbackDiv.innerHTML = allPass
+            ? `<div class="feedback correct">✓ All checks passed!</div>`
+            : `<div class="feedback incorrect">Some checks didn't pass yet — see the list above.</div>`;
+          if(allPass) setDone();
+        }
+      }
+      runBtn.disabled = false; runBtn.textContent = ex.type==='ddl' ? 'Run & Check' : 'Run Query';
+      feedbackDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    });
+
+  } else if(ex.type==='quiz'){
+    const optWrap = document.createElement('div');
+    optWrap.className = 'quiz-options';
+    ex.options.forEach((opt,i)=>{
+      const label = document.createElement('label');
+      label.className = 'quiz-option';
+      label.innerHTML = `<input type="radio" name="${ex.id}" value="${i}"> <span>${opt}</span>`;
+      optWrap.appendChild(label);
+    });
+    wrap.appendChild(optWrap);
+    optWrap.addEventListener('change', ()=>{
+      optWrap.querySelectorAll('.quiz-option').forEach(l=>l.classList.remove('selected'));
+      const checked = optWrap.querySelector('input:checked');
+      if(checked) checked.closest('.quiz-option').classList.add('selected');
+    });
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'btn-row';
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'btn'; submitBtn.textContent = 'Submit Answer';
+    btnRow.appendChild(submitBtn);
+    wrap.appendChild(btnRow);
+    wrap.appendChild(feedbackDiv);
+
+    submitBtn.addEventListener('click', ()=>{
+      const checked = optWrap.querySelector('input:checked');
+      if(!checked){ feedbackDiv.innerHTML = `<div class="feedback incorrect">Pick an answer first.</div>`; return; }
+      const correct = Number(checked.value) === ex.correctIndex;
+      feedbackDiv.innerHTML = `<div class="feedback ${correct?'correct':'incorrect'}">${correct?'✓ Correct.':'Not quite.'} ${ex.solutionText}</div>`;
+      if(correct) setDone();
+      feedbackDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    });
+
+  } else if(ex.type==='reflect'){
+    const ta = document.createElement('textarea');
+    ta.className = 'reflect-input';
+    ta.placeholder = 'Jot down your own answer, then compare it to the model answer...';
+    ta.value = drafts[ex.id] || '';
+    ta.addEventListener('input', ()=>{ drafts[ex.id]=ta.value; });
+    wrap.appendChild(ta);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'btn-row';
+    const revealBtn = document.createElement('button');
+    revealBtn.className = 'btn secondary'; revealBtn.textContent = 'Reveal Model Answer';
+    btnRow.appendChild(revealBtn);
+    wrap.appendChild(btnRow);
+
+    const solBox = document.createElement('div');
+    solBox.className = 'solution-box'; solBox.style.display='none';
+    solBox.innerHTML = `<pre>${escapeHtml(ex.solutionText)}</pre>`;
+    wrap.appendChild(solBox);
+    revealBtn.addEventListener('click', ()=>{
+      solBox.style.display = solBox.style.display==='none' ? 'block' : 'none';
+      setDone();
+    });
+  }
+
+  return wrap;
+}
+
+function renderTable(container, res){
+  if(!res.columns.length){ container.innerHTML = `<div class="feedback incorrect">Query ran, but returned no columns/rows.</div>`; return; }
+  const wrap = document.createElement('div');
+  wrap.className = 'result-table-wrap';
+  const table = document.createElement('table');
+  table.className = 'result-table';
+  table.innerHTML = `<thead><tr>${res.columns.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+    <tbody>${res.values.map(row=>`<tr>${row.map(v=>`<td>${v===null?'<i>NULL</i>':escapeHtml(String(v))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  wrap.appendChild(table);
+  container.innerHTML=''; container.appendChild(wrap);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderSchemaRef(openByDefault){
+  const details = document.createElement('details');
+  details.className = 'schema-ref';
+  if(openByDefault) details.open = true;
+
+  const summary = document.createElement('summary');
+  summary.innerHTML = `<span class="schema-ref-label">Table reference</span> — the tables and columns these exercises query`;
+  details.appendChild(summary);
+
+  const body = document.createElement('div');
+  body.className = 'schema-ref-body';
+  body.innerHTML = SCHEMA_REFERENCE.map(t => `
+    <div class="schema-ref-table">
+      <h4>${t.table}</h4>
+      <table>${t.columns.map(([col,desc]) => `<tr><td>${escapeHtml(col)}</td><td>${escapeHtml(desc)}</td></tr>`).join('')}</table>
+    </div>
+  `).join('');
+  details.appendChild(body);
+
+  return details;
+}
+
+function renderMain(engineState){
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  if(engineState!=='ready'){
+    main.innerHTML = `<div style="padding:60px 0;font-family:'IBM Plex Mono',monospace;color:#54544A;">
+      Booting a real PostgreSQL engine in your browser (WebAssembly)… this downloads once and usually takes a few seconds.
+    </div>`;
+    return;
+  }
+
+  const mod = MODULES.find(m=>m.id===currentModule);
+
+  if(mod.num===1){
+    const hero = document.createElement('div');
+    hero.className = 'hero';
+    hero.innerHTML = `
+      <div class="eyebrow">A SANDBOX SHELTER DATABASE, BUILT FOR THIS COURSE</div>
+      <h1>Practice on PawPrint, a fictional animal-shelter network</h1>
+      <p>Every exercise below runs against <strong>real PostgreSQL</strong> — compiled to WebAssembly and running entirely in your browser (nothing is sent to a server) — using a small database of shelters, animals, adopters, and adoptions.</p>
+    `;
+    main.appendChild(hero);
+  }
+
+  const header = document.createElement('div');
+  header.className = 'module-header';
+  header.innerHTML = `<div class="tag">MODULE ${mod.num}</div><h2>${mod.title}</h2><p><strong>${mod.chapters}</strong> — ${mod.blurb}</p>`;
+  main.appendChild(header);
+
+  const hasQueryExercises = mod.exercises.some(e=>e.type==='query');
+  if(hasQueryExercises){
+    main.appendChild(renderSchemaRef(mod.num===2));
+  }
+
+  mod.exercises.forEach(ex=>{
+    main.appendChild(renderExercise(ex, mod));
+  });
+
+  const nav = document.createElement('div');
+  nav.className = 'btn-row';
+  const idx = MODULES.findIndex(m=>m.id===mod.id);
+  if(idx>0){
+    const prevBtn = document.createElement('button');
+    prevBtn.className='btn secondary'; prevBtn.textContent='← Previous module';
+    prevBtn.addEventListener('click', ()=>{ currentModule = MODULES[idx-1].id; renderAll('ready'); window.scrollTo({top:0}); });
+    nav.appendChild(prevBtn);
+  }
+  if(idx<MODULES.length-1){
+    const nextBtn = document.createElement('button');
+    nextBtn.className='btn'; nextBtn.textContent='Next module →';
+    nextBtn.addEventListener('click', ()=>{ currentModule = MODULES[idx+1].id; renderAll('ready'); window.scrollTo({top:0}); });
+    nav.appendChild(nextBtn);
+  }
+  main.appendChild(nav);
+}
+
+function renderFooter(){
+  document.getElementById('footer').innerHTML = `Built for CIS 310 · Sample data is fictional. Runs on PGlite, a genuine WebAssembly build of PostgreSQL — the same SQL you'd write in pgAdmin, no server or install required. First load downloads the engine (a few MB) and may take a few seconds.`;
+}
+
+function renderAll(engineState){
+  renderSidebar(engineState);
+  renderMain(engineState);
+  renderFooter();
+}
+
+/* ---------------------------- boot ---------------------------- */
+
+async function boot(){
+  await loadProgress();
+  renderAll('loading');
+  try{
+    await initDb();
+  }catch(e){
+    document.getElementById('main').innerHTML = `<div style="padding:60px 0;color:#9B3F2C;font-family:'IBM Plex Mono',monospace;">Couldn't start the Postgres engine: ${escapeHtml(e.message)}. Try reloading, or opening this file from a web server instead of directly from disk.</div>`;
+    return;
+  }
+  renderAll('ready');
+}
+boot();
+</script>
+</body>
+</html>
