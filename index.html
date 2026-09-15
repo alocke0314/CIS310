@@ -817,13 +817,13 @@ const drafts = {};
 
 async function loadProgress(){
   try{
-    const res = await window.storage.get('pawprint-progress');
-    if(res && res.value) progress = JSON.parse(res.value);
+    const raw = localStorage.getItem('pawprint-progress');
+    if(raw) progress = JSON.parse(raw);
   }catch(e){ progress = {}; }
 }
 async function saveProgress(){
-  try{ await window.storage.set('pawprint-progress', JSON.stringify(progress)); }
-  catch(e){ /* non-fatal: progress just won't persist across sessions */ }
+  try{ localStorage.setItem('pawprint-progress', JSON.stringify(progress)); }
+  catch(e){ /* non-fatal: progress just won't persist across sessions (e.g. private/incognito browsing) */ }
 }
 function markDone(exId){
   if(!progress[exId]){ progress[exId]=true; saveProgress(); }
